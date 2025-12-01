@@ -67,21 +67,20 @@ Payment Service: http://localhost:8001
 Case 1: Happy Path (正常終了)
 通常の注文処理です。注文ステータスは COMPLETED になります。
 
-``bash
+```bash
 curl -X POST "http://localhost:8000/orders/" \
  -H "Content-Type: application/json" \
  -d '{"item_name": "Apple", "quantity": 1, "price": 100}'
-
-````
+```
 
 Case 2: Saga Compensation (異常系・補償トランザクション)
-金額に 9999 を指定すると、決済サービス側で意図的に 500 Internal Server Error が発生します。 Order Serviceはこれを検知し、一度 PENDING でコミットされた注文を CANCELLED に更新（補償）します。
+金額に 9999 を指定すると、決済サービス側で意図的に 500 Internal Server Error が発生します。 Order Service はこれを検知し、一度 PENDING でコミットされた注文を CANCELLED に更新（補償）します。
 
 ```bash
 curl -X POST "http://localhost:8000/orders/" \
      -H "Content-Type: application/json" \
      -d '{"item_name": "Bomb", "quantity": 1, "price": 9999}'
-````
+```
 
 期待される挙動 (Logs):
 
