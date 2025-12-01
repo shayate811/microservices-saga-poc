@@ -1,0 +1,88 @@
+services:
+  # ==========================================
+  # 1. Order Service (注文) & Database
+  # ==========================================
+  db-order:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: order_db
+    ports:
+      - "5434:5432"  # 変更: ホスト側のポートを5432から5434へ (競合回避)
+    volumes:
+      - db_order_data:/var/lib/postgresql/data
+    networks:
+      - saga-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d order_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  order-service:
+    build: ./order_service
+    container_name: order-service
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./order_service:/app
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://user:password@db-order:5432/order_db
+      PAYMENT_SERVICE_URL: http://payment-service:8001
+    depends_on:
+      db-order:
+        condition: service_healthy
+      payment-service:
+        condition: service_started
+    networks:
+      - saga-net
+
+  # ==========================================
+  # 2. Payment Service (決済) & Database
+  # ==========================================
+  db-payment:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: payment_db
+    ports:
+      - "5435:5432"  # 変更: 5433から5435へ (念のため)
+    volumes:
+      - db_payment_data:/var/lib/postgresql/data
+    networks:
+      - saga-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d payment_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  payment-service:
+    build: ./payment_service
+    container_name: payment-service
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8001 --reload
+    volumes:
+      - ./payment_service:/app
+    ports:
+      - "8001:8001"
+    environment:
+      DATABASE_URL: postgresql://user:password@db-payment:5432/payment_db
+    depends_on:
+      db-payment:
+        condition: service_healthy
+    networks:
+      - saga-net
+
+# ==========================================
+# Network & Volumes Definition (Top Level)
+# ==========================================
+networks:
+  saga-net:
+    driver: bridge
+
+volumes:
+  db_order_data:
+  db_payment_data:
