@@ -4,7 +4,8 @@
 
 **Saga パターン（オーケストレーション）** を実装し、決済サービスの障害発生時に、確定済みの注文データを自動的に取り消す「補償トランザクション（Compensating Transaction）」の挙動を再現しています。
 
-🔗 **解説記事 (Zenn):** []
+🔗 **解説記事 (Zenn):** 
+https://zenn.dev/shayate811/articles/microservices-saga-poc
 
 ## 🏗 Architecture
 
